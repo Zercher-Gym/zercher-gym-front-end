@@ -47,7 +47,6 @@ const confirmPassword = ref('');
 
 onMounted(async () => {
   try {
-    // Optionally verify token validity
     await axios.get(
       `${import.meta.env.VITE_API_BASE_URL}/auth/verify-reset-token`,
       { params: { token } }
