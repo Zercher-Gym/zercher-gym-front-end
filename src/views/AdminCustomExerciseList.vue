@@ -1,88 +1,54 @@
 <template>
-  <div class="user-list">
+  <div class="custom-exercise-list">
     <div class="header">
-      <h2>Gestionare Utilizatori</h2>
-      <router-link to="/admin/users/new" class="btn-add">Adauga Utilizator</router-link>
+      <h2>Exercitii Personalizate</h2>
     </div>
 
     <!-- Filters -->
     <div class="filters-container">
       <form @submit.prevent="load" class="filters">
         <div class="filter-group">
-          <input v-model="filters.username" placeholder="Username" />
-          <input v-model="filters.email" placeholder="Email" />
-          <input v-model="filters.id" placeholder="User ID" />
+          <input v-model="filters.title" placeholder="Titlu exercitiu" />
+          <input v-model="filters.username" placeholder="Username creator" />
+          <input v-model="filters.id" placeholder="ID exercitiu" />
         </div>
         <div class="filter-group">
-          <select v-model="filters.enabled">
-            <option value="">Toate Statusurile</option>
-            <option :value="true">Activ</option>
-            <option :value="false">Inactiv</option>
-          </select>
-          <select v-model="filters.locked">
-            <option value="">Toate Blocajele</option>
-            <option :value="true">Blocat</option>
-            <option :value="false">Deblocat</option>
-          </select>
-          <button type="submit" class="btn-filter">Filtreaza</button>
+          <button type="submit" class="btn-filter">
+            <i class="fas fa-search"></i> Filtreaza
+          </button>
         </div>
       </form>
     </div>
 
-    <!-- Users table -->
+    <!-- Exercises table -->
     <div class="table-container">
       <table>
         <thead>
           <tr>
-            <th>Username</th>
-            <th>Email</th>
-            <th>ID</th>
-            <th>Status</th>
-            <th>Blocat</th>
+            <th>Titlu</th>
+            <th>Descriere</th>
+            <th>Creator</th>
             <th>Data Crearii</th>
-            <th>Roluri</th>
             <th>Actiuni</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="u in users" :key="u.id">
-            <td>{{ u.username }}</td>
-            <td>{{ u.email }}</td>
-            <td class="text-xs whitespace-nowrap">{{ u.id }}</td>
-            <td>
-              <span :class="['status-badge', u.enabled ? 'status-active' : 'status-inactive']">
-                {{ u.enabled ? 'Activ' : 'Inactiv' }}
-              </span>
-            </td>
-            <td>
-              <span :class="['status-badge', u.locked ? 'status-locked' : 'status-unlocked']">
-                {{ u.locked ? 'Da' : 'Nu' }}
-              </span>
-            </td>
-            <td>{{ new Date(u.createdAt || u.created).toLocaleString() }}</td>
-            <td>
-              <div class="roles-container">
-                <span v-for="role in (Array.isArray(u.roles) ? u.roles : [u.roles])" 
-                      :key="role" 
-                      class="role-badge">
-                  {{ role }}
-                </span>
-              </div>
-            </td>
+          <tr v-for="exercise in exercises" :key="exercise.id">
+            <td>{{ exercise.title }}</td>
+            <td>{{ exercise.description }}</td>
+            <td>{{ exercise.createdBy?.username || 'Necunoscut' }}</td>
+            <td>{{ new Date(exercise.createdAt).toLocaleString() }}</td>
             <td class="actions">
-              <router-link :to="`/admin/users/${u.id}`" class="btn-edit">
-                <i class="fas fa-edit"></i> Edit
-              </router-link>
-              <button @click="confirmDelete(u.id)" class="btn-delete">
-                <i class="fas fa-trash"></i> Delete
+              <button @click="confirmDelete(exercise.id)" class="btn-delete">
+                <i class="fas fa-trash"></i> Sterge
               </button>
             </td>
           </tr>
-          <tr v-if="!loading && users.length === 0">
-            <td colspan="8" class="text-center no-data">Nu s-au gasit utilizatori</td>
+          <tr v-if="!loading && exercises.length === 0">
+            <td colspan="5" class="text-center no-data">Nu s-au gasit exercitii personalizate</td>
           </tr>
           <tr v-if="loading">
-            <td colspan="8" class="text-center loading">
+            <td colspan="5" class="text-center loading">
               <div class="loader"></div>
               Se incarca...
             </td>
@@ -113,24 +79,22 @@
 </template>
 
 <script>
-import { fetchUsers, deleteUser } from '../services/userService.js'
+import { fetchCustomExercises, deleteCustomExercise } from '../services/customExerciseService.js'
 import DeleteModal from '../components/DeleteModal.vue'
 
 export default {
-  name: 'AdminUserList',
+  name: 'AdminCustomExerciseList',
   components: { DeleteModal },
   data() {
     return {
       filters: {
         page: 0,
         size: 10,
+        title: '',
         username: '',
-        email: '',
-        id: '',
-        enabled: '',
-        locked: ''
+        id: ''
       },
-      users: [],
+      exercises: [],
       loading: false,
       showDelete: false,
       delId: null,
@@ -161,21 +125,20 @@ export default {
         page: this.pageNumber,
         size: this.pageSize
       })
-      fetchUsers(params)
+      fetchCustomExercises(params)
         .then(res => {
           const data = res.data
-          // Accept several response shapes
           const list = Array.isArray(data)
             ? data
-            : data.data || data.content || data.users || []
-          this.users = list
+            : data.data || data.content || data.exercises || []
+          this.exercises = list
           this.pageNumber = data.pageNumber ?? data.page ?? this.pageNumber
           this.pageSize = data.pageSize ?? data.size ?? this.pageSize
           this.totalElements = data.totalElements ?? data.total ?? list.length
         })
         .catch(err => {
-          console.error('load users error', err)
-          this.users = []
+          console.error('load exercises error', err)
+          this.exercises = []
         })
         .finally(() => {
           this.loading = false
@@ -198,7 +161,7 @@ export default {
       this.showDelete = true
     },
     doDelete(id) {
-      deleteUser(id).then(() => {
+      deleteCustomExercise(id).then(() => {
         this.showDelete = false
         this.load()
       })
@@ -211,7 +174,7 @@ export default {
 </script>
 
 <style scoped>
-.user-list {
+.custom-exercise-list {
   max-width: 1200px;
   margin: 2rem auto;
   padding: 0 1rem;
@@ -228,22 +191,6 @@ export default {
   font-size: 1.8rem;
   color: #2c3e50;
   margin: 0;
-}
-
-.btn-add {
-  padding: 0.75rem 1.5rem;
-  background-color: #4CAF50;
-  color: white;
-  text-decoration: none;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.btn-add:hover {
-  background-color: #45a049;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .filters-container {
@@ -266,8 +213,7 @@ export default {
   flex-wrap: wrap;
 }
 
-.filters input,
-.filters select {
+.filters input {
   flex: 1;
   min-width: 200px;
   padding: 0.75rem;
@@ -277,8 +223,7 @@ export default {
   transition: all 0.3s ease;
 }
 
-.filters input:focus,
-.filters select:focus {
+.filters input:focus {
   border-color: #4CAF50;
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
   outline: none;
@@ -292,6 +237,9 @@ export default {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   transition: all 0.3s ease;
 }
 
@@ -328,79 +276,23 @@ td {
   color: #4a5568;
 }
 
-.status-badge {
-  padding: 0.35rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.status-active {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.status-inactive {
-  background-color: #ffebee;
-  color: #c62828;
-}
-
-.status-locked {
-  background-color: #fff3e0;
-  color: #ef6c00;
-}
-
-.status-unlocked {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.roles-container {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.role-badge {
-  padding: 0.25rem 0.75rem;
-  background-color: #e3f2fd;
-  color: #1565c0;
-  border-radius: 20px;
-  font-size: 0.85rem;
-}
-
 .actions {
   display: flex;
   gap: 0.5rem;
 }
 
-.btn-edit,
 .btn-delete {
   padding: 0.5rem 1rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
   border-radius: 6px;
-  text-decoration: none;
+  cursor: pointer;
   font-size: 0.9rem;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   transition: all 0.3s ease;
-}
-
-.btn-edit {
-  background-color: #2196F3;
-  color: white;
-  border: none;
-}
-
-.btn-edit:hover {
-  background-color: #1976D2;
-  transform: translateY(-1px);
-}
-
-.btn-delete {
-  background-color: #f44336;
-  color: white;
-  border: none;
 }
 
 .btn-delete:hover {
@@ -469,11 +361,26 @@ td {
   font-style: italic;
 }
 
-.text-xs {
-  font-size: 0.75rem;
-}
+@media (max-width: 768px) {
+  .filter-group {
+    flex-direction: column;
+  }
 
-.whitespace-nowrap {
-  white-space: nowrap;
+  .filters input {
+    width: 100%;
+  }
+
+  .btn-filter {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 800px;
+  }
 }
-</style>
+</style> 
