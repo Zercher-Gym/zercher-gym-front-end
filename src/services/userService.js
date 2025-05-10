@@ -37,3 +37,16 @@ export function updateUser(id, { enabled, locked }) {
 export function deleteUser(id) {
   return USER_API.delete(`/api/user/admin/${id}`);
 }
+
+// Functie pentru crearea unui utilizator nou
+export function createUser(userData) {
+  // Structura datelor pentru crearea unui utilizator
+  const payload = {
+    username: userData.username,
+    email: userData.email,
+    password: userData.password,
+    // Alte campuri necesare
+  };
+  
+  return USER_API.post('/api/user/admin/create', payload);
+}

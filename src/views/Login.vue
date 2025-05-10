@@ -18,6 +18,7 @@
   
   <script>
   import { signIn } from '../services/authService.js';
+  import { fetchUserProfile } from '../services/userProfileService.js';
   export default {
     name: 'Login',
     data() {
@@ -33,10 +34,32 @@
         this.error = '';
         this.loading = true;
         try {
-          await signIn({ username: this.username, password: this.password });
-          this.$router.push('/admin/users');
+          const response = await signIn({ username: this.username, password: this.password });
+          if (response && response.data && response.data.data) {
+            // Salvează tokenul JWT
+            sessionStorage.setItem('jwt', response.data.data);
+            
+            // Obține profilul utilizatorului pentru a avea rolurile
+            try {
+              console.log('Fetching user profile...');
+              const profileData = await fetchUserProfile();
+              console.log('User profile loaded:', profileData);
+              
+              // Redirecționează către dashboard
+              await this.$router.push('/admin/dashboard');
+            } catch (profileError) {
+              console.error('Error fetching user profile:', profileError);
+              // Continuă chiar dacă obținerea profilului eșuează
+              await this.$router.push('/admin/dashboard');
+            }
+          } else {
+            throw new Error('Invalid response from server');
+          }
         } catch (e) {
-          this.error = e.response?.data?.error || 'Login failed';
+          console.error('Login error:', e);
+          this.error = e.response?.data?.error || 'Login failed. Please try again.';
+          sessionStorage.removeItem('jwt');
+          sessionStorage.removeItem('userRoles');
         } finally {
           this.loading = false;
         }
@@ -49,8 +72,61 @@
   .login-container {
     max-width: 400px;
     margin: 2rem auto;
-    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  .error { color: red; margin-top: 1rem; }
-  button { margin-top: 1rem; padding: 0.5rem 1rem; }
+  
+  h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #2c3e50;
+  }
+  
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+  }
+  
+  input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  button {
+    padding: 0.75rem;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  button:hover:not(:disabled) {
+    background-color: #45a049;
+  }
+  
+  button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  
+  .error {
+    color: #f44336;
+    text-align: center;
+    margin-top: 1rem;
+  }
   </style>
