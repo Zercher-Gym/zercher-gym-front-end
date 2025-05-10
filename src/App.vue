@@ -1,13 +1,14 @@
 <!-- src/App.vue -->
 <template>
+  <keep-alive>
     <router-view />
-  </template>
-  
-  <script setup>
-  // any global setup
-  </script>
-  
-  <style>
-  /* optional global styles */
-  </style>
-  
+  </keep-alive>
+</template>
+
+<script setup>
+// any global setup
+</script>
+
+<style>
+/* optional global styles */
+</style>

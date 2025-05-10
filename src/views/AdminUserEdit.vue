@@ -1,7 +1,7 @@
 <template>
   <div class="edit-user">
     <div class="header">
-      <h2>Editare Utilizator</h2>
+      <h2>{{ isNew ? 'Adauga Utilizator' : 'Editare Utilizator' }}</h2>
       <router-link to="/admin/users" class="btn-back">
         <i class="fas fa-arrow-left"></i> Inapoi la Lista
       </router-link>
@@ -15,8 +15,8 @@
           <input 
             id="username" 
             v-model="user.username" 
-            disabled
-            class="input-disabled"
+            :disabled="!isNew"
+            :class="{ 'input-disabled': !isNew }"
           />
         </div>
 
@@ -26,8 +26,18 @@
           <input 
             id="email" 
             v-model="user.email" 
-            disabled
-            class="input-disabled"
+            :disabled="!isNew"
+            :class="{ 'input-disabled': !isNew }"
+          />
+        </div>
+
+        <!-- Password -->
+        <div class="form-group" v-if="isNew">
+          <label for="password">Parola</label>
+          <input 
+            id="password" 
+            v-model="user.password" 
+            type="password"
           />
         </div>
 
@@ -73,7 +83,7 @@
         <!-- Save Button -->
         <div class="form-actions">
           <button type="submit" class="btn-save">
-            <i class="fas fa-save"></i> Salveaza Modificarile
+            <i class="fas fa-save"></i> {{ isNew ? 'Creeaza Utilizator' : 'Salveaza Modificarile' }}
           </button>
         </div>
       </form>
@@ -93,13 +103,22 @@ export default {
       user: {
         username: '',
         email: '',
-        enabled: false,
+        enabled: true,
         locked: false,
-        roles: []
+        password: '',
+        roles: ['USER']
       }
     }
   },
+  computed: {
+    isNew() {
+      return !this.id;
+    }
+  },
   mounted() {
+    // Daca este un utilizator nou, nu incarcam date
+    if (this.isNew) return;
+    
     fetchUsers({ page: 0, size: 1, id: this.id })
       .then(res => {
         const data = res.data
@@ -118,22 +137,38 @@ export default {
       try {
         const baseURL = import.meta.env.VITE_API_BASE_URL || ''
         const token = sessionStorage.getItem('jwt')
-        await axios.put(`${baseURL}/api/user/admin/${this.id}`,
-          {
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        };
+        
+        if (this.isNew) {
+          // Cream un utilizator nou
+          const payload = {
+            username: this.user.username,
+            email: this.user.email,
+            password: this.user.password,
             enabled: this.user.enabled,
-            locked: this.user.locked,
             roles: this.user.roles
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            }
-          }
-        )
+          };
+          
+          await axios.post(`${baseURL}/api/user/admin/create`, payload, { headers });
+        } else {
+          // Actualizam un utilizator existent
+          await axios.put(`${baseURL}/api/user/admin/${this.id}`,
+            {
+              enabled: this.user.enabled,
+              locked: this.user.locked,
+              roles: this.user.roles
+            },
+            { headers }
+          );
+        }
+        
         this.$router.push('/admin/users')
       } catch (err) {
-        console.error('Failed to update user', err)
+        console.error('Failed to save user', err)
+        alert(`Eroare: ${err.response?.data?.message || err.message}`);
       }
     }
   }

@@ -18,6 +18,7 @@
   
   <script>
   import { signIn } from '../services/authService.js';
+  import { fetchUserProfile } from '../services/userProfileService.js';
   export default {
     name: 'Login',
     data() {
@@ -35,8 +36,22 @@
         try {
           const response = await signIn({ username: this.username, password: this.password });
           if (response && response.data && response.data.data) {
+            // Salvează tokenul JWT
             sessionStorage.setItem('jwt', response.data.data);
-            await this.$router.push('/admin/dashboard');
+            
+            // Obține profilul utilizatorului pentru a avea rolurile
+            try {
+              console.log('Fetching user profile...');
+              const profileData = await fetchUserProfile();
+              console.log('User profile loaded:', profileData);
+              
+              // Redirecționează către dashboard
+              await this.$router.push('/admin/dashboard');
+            } catch (profileError) {
+              console.error('Error fetching user profile:', profileError);
+              // Continuă chiar dacă obținerea profilului eșuează
+              await this.$router.push('/admin/dashboard');
+            }
           } else {
             throw new Error('Invalid response from server');
           }
@@ -44,6 +59,7 @@
           console.error('Login error:', e);
           this.error = e.response?.data?.error || 'Login failed. Please try again.';
           sessionStorage.removeItem('jwt');
+          sessionStorage.removeItem('userRoles');
         } finally {
           this.loading = false;
         }

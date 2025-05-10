@@ -29,7 +29,7 @@
           <td>{{ getRomanianLabel(exercise.labels)?.title }}</td>
           <td>{{ getRomanianLabel(exercise.labels)?.description }}</td>
           <td>
-            <router-link :to="`/admin/exercises/${exercise.id}/edit`">Editează</router-link>
+            <router-link :to="`/admin/exercises/${exercise.id}`">Editează</router-link>
             <button @click="confirmDelete(exercise.id)">Șterge</button>
           </td>
         </tr>
@@ -53,6 +53,7 @@
     <DeleteModal
       v-if="showDelete"
       :id="delId"
+      itemType="exercițiul"
       @confirm="doDelete"
       @cancel="showDelete = false"
     />
@@ -101,21 +102,62 @@ export default {
     },
     load() {
       this.loading = true
+      
+      // Verificăm dacă avem flag-ul de reîncărcare setat
+      const needsReload = sessionStorage.getItem('exerciseListNeedsReload')
+      if (needsReload === 'true') {
+        console.log('Exercise list needs reload flag detected, forcing reload')
+        // Resetăm flag-ul
+        sessionStorage.removeItem('exerciseListNeedsReload')
+        // Resetăm filtrele pentru a vedea toate exercițiile, inclusiv cel nou adăugat
+        this.filters = {
+          identifier: '',
+          title: ''
+        }
+      }
+      
       const params = this.clean({
         ...this.filters,
         page: this.pageNumber,
         size: this.pageSize
       })
+      console.log('Loading exercises with params:', params)
       fetchExercises(params)
         .then(res => {
-          const data = res.data
-          this.exercises = data.content || []
+          console.log('Exercise list response:', res.data)
+          
+          // Check the response structure to correctly extract exercises
+          let data = res.data;
+          
+          // Check if the response has a 'data' wrapper
+          if (data && data.data) {
+            console.log('Found data wrapper in response');
+            data = data.data;
+          }
+          
+          // Check if exercises are directly in an array or in the 'content' property
+          if (Array.isArray(data)) {
+            console.log('Response contains array of exercises');
+            this.exercises = data;
+          } else if (data && data.content && Array.isArray(data.content)) {
+            console.log('Response contains paginated content');
+            this.exercises = data.content;
+          } else {
+            console.warn('Could not find exercises in response, using empty array');
+            this.exercises = [];
+          }
+          
+          console.log('Exercises loaded:', this.exercises.length, 'items');
+          console.log('Exercise sample:', this.exercises.length > 0 ? this.exercises[0] : 'No exercises');
+          
+          // Update pagination information
           this.pageNumber = data.pageNumber ?? data.page ?? this.pageNumber
           this.pageSize = data.pageSize ?? data.size ?? this.pageSize
           this.totalElements = data.totalElements ?? data.total ?? this.exercises.length
         })
         .catch(err => {
           console.error('Error loading exercises:', err)
+          console.error('Error details:', err.response ? err.response.data : 'No response data')
           this.exercises = []
         })
         .finally(() => {
@@ -155,6 +197,13 @@ export default {
   },
   mounted() {
     this.load()
+  },
+  // This will be called when navigating back to this page
+  activated() {
+    console.log('AdminExerciseList activated, reloading data')
+    setTimeout(() => {
+      this.load()
+    }, 300)
   }
 }
 </script>

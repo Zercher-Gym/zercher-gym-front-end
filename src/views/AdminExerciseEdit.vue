@@ -3,10 +3,17 @@
     <h2>{{ isNew ? 'Adaugă Exercițiu' : 'Editează Exercițiu' }}</h2>
 
     <form @submit.prevent="save" v-if="!loading">
-      <div class="form-group">
+      <!-- Identifier is only shown when creating a new exercise -->
+      <div class="form-group" v-if="isNew">
         <label>Identificator:</label>
         <input v-model="form.identifier" required />
       </div>
+      <!-- In edit mode, we display the identifier as text -->
+      <div class="form-group" v-else>
+        <label>Identificator:</label>
+        <div class="readonly-field">{{ form.identifier }}</div>
+      </div>
+      <!-- Title and description can be edited in both modes -->
       <div class="form-group">
         <label>Titlu (RO):</label>
         <input v-model="form.title" required />
@@ -45,6 +52,7 @@ export default {
         title: '',
         description: ''
       },
+      numericId: null, // adaugam id-ul numeric pentru actualizare
       loading: false,
       saving: false
     }
@@ -61,7 +69,43 @@ export default {
       this.loading = true
       getExercise(this.id)
         .then(res => {
-          const exercise = res.data
+          console.log('Raw response:', res);
+          const exercise = res.data;
+          console.log('Loaded exercise data:', JSON.stringify(exercise, null, 2));
+          
+          // Analyze the data structure to find the numeric ID
+          console.log('Exercise data keys:', Object.keys(exercise));
+          
+          // Try to find the numeric ID in different possible locations
+          let foundId = null;
+          
+          // From logs, we observed that the numeric ID is in labels[0].id
+          if (exercise.labels && exercise.labels.length > 0 && exercise.labels[0].id !== undefined) {
+            foundId = exercise.labels[0].id;
+            console.log('Found numeric ID in exercise.labels[0].id:', foundId);
+          } else if (exercise.data && exercise.data.labels && exercise.data.labels.length > 0 && exercise.data.labels[0].id !== undefined) {
+            foundId = exercise.data.labels[0].id;
+            console.log('Found numeric ID in exercise.data.labels[0].id:', foundId);
+          } else if (exercise.id !== undefined) {
+            foundId = exercise.id;
+            console.log('Found ID directly in exercise.id:', foundId);
+          } else if (exercise.exerciseId !== undefined) {
+            foundId = exercise.exerciseId;
+            console.log('Found ID in exercise.exerciseId:', foundId);
+          } else if (exercise.data && exercise.data.id !== undefined) {
+            foundId = exercise.data.id;
+            console.log('Found ID in exercise.data.id:', foundId);
+          }
+          
+          // Save the numeric ID for update
+          this.numericId = foundId;
+          console.log('Numeric ID for update:', this.numericId);
+          
+          // Check if we have a valid ID
+          if (this.numericId === null || this.numericId === undefined) {
+            console.error('Could not find a valid numeric ID for this exercise!');
+          }
+          
           this.form.identifier = exercise.identifier
           const roLabel = exercise.labels?.find(label => label.language === 'RO')
           if (roLabel) {
@@ -79,26 +123,53 @@ export default {
     },
     save() {
       this.saving = true
-      const payload = {
-        identifier: this.form.identifier,
-        labels: [{
+      
+      let payload;
+      let action;
+      
+      if (this.isNew) {
+        payload = {
+          identifier: this.form.identifier,
+          labels: [{
+            title: this.form.title,
+            description: this.form.description,
+            language: 'RO'
+          }]
+        };
+        
+        console.log('Creating new exercise with payload:', JSON.stringify(payload));
+        action = createExercise(payload);
+      } else {
+        payload = {
           title: this.form.title,
-          description: this.form.description,
-          language: 'RO'
-        }]
+          description: this.form.description
+        };
+        
+        // Folosim ID-ul numeric pentru actualizare
+        console.log(`Updating exercise with numeric ID ${this.numericId} with payload:`, JSON.stringify(payload));
+        action = updateExercise(this.numericId, payload);
       }
 
-      const action = this.isNew
-        ? createExercise(payload)
-        : updateExercise(this.id, payload)
-
       action
-        .then(() => {
-          this.$router.push('/admin/exercises')
+        .then(response => {
+          console.log('Exercise saved successfully:', response.data)
+          // Force a larger delay to ensure backend processing is complete
+          setTimeout(() => {
+            // Set a flag in sessionStorage to indicate that the list should be reloaded
+            sessionStorage.setItem('exerciseListNeedsReload', 'true')
+            this.$router.push('/admin/exercises')
+          }, 1000)
         })
         .catch(err => {
           console.error('Error saving exercise:', err)
-          alert('Eroare la salvarea exercițiului')
+          console.error('Error details:', err.response ? err.response.data : 'No response data')
+          
+          // Verificu0103 dacu0103 este eroarea de identificator duplicat
+          if (err.response && err.response.data && err.response.data.error === 'exerciseWithIdentifierExists') {
+            alert(`Identificatorul '${this.form.identifier}' existu0103 deja. Te rog alege un alt identificator.`)
+          } else {
+            alert(`Eroare la salvarea exercițiului: ${err.response ? err.response.data.message || err.response.statusText : err.message}`)
+          }
         })
         .finally(() => {
           this.saving = false
@@ -112,6 +183,14 @@ export default {
 </script>
 
 <style scoped>
+.readonly-field {
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
 .exercise-edit {
   max-width: 600px;
   margin: 2rem auto;
