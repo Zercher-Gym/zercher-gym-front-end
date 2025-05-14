@@ -13,17 +13,18 @@ import { useRoute } from 'vue-router';
 import axios from 'axios';
 
 const route = useRoute();
-const token = route.query.token;
+const token = route.query.token || route.params.token;
 const loading = ref(true);
 const error = ref('');
 const message = ref('');
 
 onMounted(async () => {
+  console.log('Token pentru confirmare:', token);
+  
   try {
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/auth/confirm-email`,
-      { params: { token } }
-    );
+    // Folosim direct proxy-ul configurat în vite.config.js
+    console.log('URL folosit pentru confirmare:', `/api/auth/confirmEmail/${token}`);
+    const response = await axios.post(`/api/auth/confirmEmail/${token}`);
     message.value = response.data.message || 'Your email has been confirmed!';
   } catch (err) {
     error.value = err.response?.data?.message ||
