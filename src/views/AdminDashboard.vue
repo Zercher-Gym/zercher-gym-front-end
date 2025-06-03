@@ -18,6 +18,7 @@
         <div class="actions">
           <router-link to="/admin/exercises" class="btn">Lista Exercitii</router-link>
           <router-link to="/admin/exercises/new" class="btn">Adauga Exercitiu</router-link>
+          <router-link to="/admin/exercises/settings" class="btn">Setări Exerciții</router-link>
         </div>
       </div>
 
@@ -41,6 +42,10 @@
         <router-link to="/admin/exercises/custom" class="dashboard-link">
           <i class="fas fa-user-edit"></i>
           Exercitii Personalizate
+        </router-link>
+        <router-link to="/admin/exercises/settings" class="dashboard-link">
+          <i class="fas fa-cog"></i>
+          Setări Limite Exerciții
         </router-link>
       </div>
     </div>
