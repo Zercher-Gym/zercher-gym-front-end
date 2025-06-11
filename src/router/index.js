@@ -8,6 +8,7 @@ import AdminExerciseList from '../views/AdminExerciseList.vue';
 import AdminExerciseEdit from '../views/AdminExerciseEdit.vue';
 import AdminDashboard from '../views/AdminDashboard.vue';
 import AdminCustomExerciseList from '../views/AdminCustomExerciseList.vue';
+import AdminExerciseSettings from '../views/AdminExerciseSettings.vue';
 
 const routes = [
   // default to login
@@ -27,6 +28,12 @@ const routes = [
     name: 'AdminCustomExerciseList',
     component: AdminCustomExerciseList,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/exercises/settings',
+    name: 'AdminExerciseSettings',
+    component: AdminExerciseSettings,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
 ];
 
