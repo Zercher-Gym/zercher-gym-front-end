@@ -13,13 +13,20 @@
         <label>Identificator:</label>
         <div class="readonly-field">{{ form.identifier }}</div>
       </div>
+      <!-- Language selector -->
+      <div class="form-group">
+        <label>Limba:</label>
+        <select v-model="currentLang">
+          <option v-for="l in languages" :key="l" :value="l">{{ l.toUpperCase() }}</option>
+        </select>
+      </div>
       <!-- Title and description can be edited in both modes -->
       <div class="form-group">
-        <label>Titlu (RO):</label>
+        <label>Titlu ({{ currentLang.toUpperCase() }}):</label>
         <input v-model="form.title" required />
       </div>
       <div class="form-group">
-        <label>Descriere (RO):</label>
+        <label>Descriere ({{ currentLang.toUpperCase() }}):</label>
         <textarea v-model="form.description" required></textarea>
       </div>
       <div class="form-group">
@@ -45,7 +52,7 @@
 </template>
 
 <script>
-import { getExercise, createExercise, updateExercise } from '../services/exerciseService'
+import { getExercise, createExercise, updateExercise, updateExerciseUnits } from '../services/exerciseService'
 import { fetchUnits } from '../services/unitService'
 import MultiSelectDropdown from '../components/MultiSelectDropdown.vue'
 
@@ -64,6 +71,8 @@ export default {
         title: '',
         description: ''
       },
+      currentLang: 'ro',
+      labelsMap: {}, // { lang: { title, description, id } }
       selectedUnitIds: [],
       unitsList: [],
       numericId: null, // adaugam id-ul numeric pentru actualizare
@@ -74,6 +83,24 @@ export default {
   computed: {
     isNew() {
       return !this.id
+    },
+    languages() {
+      return Object.keys(this.labelsMap).length ? Object.keys(this.labelsMap) : ['ro'];
+    }
+  },
+  watch: {
+    currentLang(newLang){
+      const lb = this.labelsMap[newLang] || { title:'', description:'', id:null };
+      this.form.title = lb.title;
+      this.form.description = lb.description;
+    },
+    'form.title'(val){
+      if(!this.labelsMap[this.currentLang]) this.$set(this.labelsMap, this.currentLang, { title:'', description:'', id:null });
+      this.labelsMap[this.currentLang].title = val;
+    },
+    'form.description'(val){
+      if(!this.labelsMap[this.currentLang]) this.$set(this.labelsMap, this.currentLang, { title:'', description:'', id:null });
+      this.labelsMap[this.currentLang].description = val;
     }
   },
   components: { MultiSelectDropdown },
@@ -85,8 +112,13 @@ export default {
       getExercise(this.id)
         .then(res => {
           console.log('Raw response:', res);
-          const exercise = res.data;
-          console.log('Loaded exercise data:', JSON.stringify(exercise, null, 2));
+          // API may wrap payload as { success, error, data }
+          const wrapper = res.data;
+          const exercise = wrapper && wrapper.data ? wrapper.data : wrapper;
+          console.log('Loaded exercise data (unwrapped):', JSON.stringify(exercise, null, 2));
+          
+          // Set identifier for display
+          this.form.identifier = exercise.identifier || '';
           
           // Analyze the data structure to find the numeric ID
           console.log('Exercise data keys:', Object.keys(exercise));
@@ -121,16 +153,31 @@ export default {
             console.error('Could not find a valid numeric ID for this exercise!');
           }
           
-          this.form.identifier = exercise.identifier
-          const roLabel = Array.isArray(exercise.labels) 
-            ? exercise.labels.find(l => (l.language || '').toLowerCase() === 'ro')
-            : (exercise.labels?.ro || exercise.labels?.RO || null)
-          if (roLabel) {
-            this.form.title = roLabel.title
-            this.form.description = roLabel.description
+          this.labelsMap = {};
+          if (Array.isArray(exercise.labels)) {
+            exercise.labels.forEach(l=>{
+              const lang = (l.language||'ro').toLowerCase();
+              this.labelsMap[lang] = { title:l.title, description:l.description, id:l.id ?? l.labelId };
+            });
+          } else if (exercise.labels && typeof exercise.labels==='object') {
+            Object.entries(exercise.labels).forEach(([lang,l])=>{
+              this.labelsMap[lang.toLowerCase()] = { title:l.title, description:l.description, id:l.id ?? l.labelId };
+            });
           }
+
+          if(!this.labelsMap[this.currentLang]) this.currentLang = Object.keys(this.labelsMap)[0] || 'ro';
+          const cur = this.labelsMap[this.currentLang] || { title:'', description:'' };
+          this.form.title = cur.title;
+          this.form.description = cur.description;
           
-          this.selectedUnitIds = exercise.units;
+          // `exercise.units` may come as an array of objects or ids; normalise to an array of ids.
+          if (Array.isArray(exercise.units)) {
+            this.selectedUnitIds = exercise.units.map(u => {
+              return typeof u === 'object' && u !== null ? u.id ?? u.unitId ?? u.value : u;
+            });
+          } else {
+            this.selectedUnitIds = [];
+          }
         })
         .catch(err => {
           console.error('Error loading exercise:', err)
@@ -156,34 +203,48 @@ export default {
       
       let payload;
       let action;
+      let extraAction = null;
       
       if (this.isNew) {
+        const labelEntries = Object.entries(this.labelsMap).length
+          ? Object.entries(this.labelsMap).map(([lang,data])=>({ title:data.title, description:data.description, language:lang }))
+          : [{ language:this.currentLang, title:this.form.title, description:this.form.description }];
+
         payload = {
           identifier: this.form.identifier,
-          labels: [{
-            title: this.form.title,
-            description: this.form.description,
-            language: 'ro'
-          }],
+          labels: labelEntries,
+          // compatibilitate
+          title: this.form.title,
+          description: this.form.description,
           units: this.selectedUnitIds.map(Number)
         };
         
         console.log('Creating new exercise with payload:', JSON.stringify(payload));
         action = createExercise(payload);
       } else {
-        payload = {
-          title: this.form.title,
-          description: this.form.description
-        };
-        
-        // Folosim ID-ul numeric pentru actualizare
-        console.log(`Updating exercise with numeric ID ${this.numericId} with payload:`, JSON.stringify(payload));
-        action = updateExercise(this.numericId, payload);
+        const labelEntry = this.labelsMap[this.currentLang];
+        if(!labelEntry || !labelEntry.id){
+          alert('Nu există label pentru această limbă. Crearea de label nou nu este suportată momentan.');
+          this.saving=false; return;
+        }
+        payload = { title: labelEntry.title, description: labelEntry.description };
+        console.log(`Updating label ${labelEntry.id} lang ${this.currentLang} with`, payload);
+        action = updateExercise(labelEntry.id, payload);
+
+        extraAction = updateExerciseUnits(
+          this.id,
+          this.form.identifier,
+          this.selectedUnitIds,
+          this.form.title,
+          this.form.description
+        );
       }
 
-      action
-        .then(response => {
-          console.log('Exercise saved successfully:', response.data)
+      const promises = extraAction ? [action, extraAction] : [action];
+
+      Promise.all(promises)
+        .then(responseArr => {
+          console.log('Exercise saved successfully:', responseArr.map(r=>r.data))
           // Force a larger delay to ensure backend processing is complete
           setTimeout(() => {
             // Set a flag in sessionStorage to indicate that the list should be reloaded
