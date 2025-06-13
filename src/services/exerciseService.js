@@ -2,9 +2,10 @@ import axios from 'axios'
 import { hasRole, hasAnyRole } from './userProfileService'
 
 const BASE_URL = '/api/exercise'
+const ADMIN_URL = `${BASE_URL}/admin`
 
 export const fetchExercises = (params) => {
-  const url = `${BASE_URL}/admin/search`;
+  const url = `${ADMIN_URL}/search`;
   console.log('Fetching exercises from URL:', url, 'with params:', params);
   
   return axios.get(url, { params })
@@ -34,8 +35,8 @@ export const fetchExercises = (params) => {
 export const createExercise = (data) => {
   console.log('Creating exercise with data:', JSON.stringify(data))
   
-  // Folosim endpoint-ul exact din Swagger: POST /api/exercise/admin/create
-  const url = `${BASE_URL}/admin/create`;
+  // Folosim endpoint-ul exact din Swagger: POST /api/exercise/create
+  const url = `${ADMIN_URL}/create`;
   console.log('Posting to URL:', url);
   
   return axios.post(url, data)
@@ -129,9 +130,7 @@ export const updateExercise = (id, data) => {
 }
 
 export const deleteExercise = (id) => {
-  const url = `${BASE_URL}/admin/${id}`;
-  console.log(`Deleting exercise with ID: ${id} from URL: ${url}`);
-  return axios.delete(url);
+  return axios.delete(`${ADMIN_URL}/${id}`)
 }
 
 export const getExercise = (id) => {

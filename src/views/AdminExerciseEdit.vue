@@ -112,7 +112,9 @@ export default {
           }
           
           this.form.identifier = exercise.identifier
-          const roLabel = exercise.labels?.find(label => label.language.toLowerCase() === 'ro')
+          const roLabel = Array.isArray(exercise.labels) 
+            ? exercise.labels.find(l => (l.language || '').toLowerCase() === 'ro')
+            : (exercise.labels?.ro || exercise.labels?.RO || null)
           if (roLabel) {
             this.form.title = roLabel.title
             this.form.description = roLabel.description
@@ -147,8 +149,7 @@ export default {
             title: this.form.title,
             description: this.form.description,
             language: 'ro'
-          }],
-          units: units
+          }]
         };
         
         console.log('Creating new exercise with payload:', JSON.stringify(payload));
@@ -267,4 +268,4 @@ button:disabled {
   font-style: italic;
   color: #666;
 }
-</style> 
+</style>

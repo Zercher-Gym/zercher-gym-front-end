@@ -9,6 +9,9 @@ import AdminExerciseEdit from '../views/AdminExerciseEdit.vue';
 import AdminDashboard from '../views/AdminDashboard.vue';
 import AdminCustomExerciseList from '../views/AdminCustomExerciseList.vue';
 import AdminExerciseSettings from '../views/AdminExerciseSettings.vue';
+import AdminWorkoutList from '../views/AdminWorkoutList.vue';
+import AdminWorkoutEdit from '../views/AdminWorkoutEdit.vue';
+import AdminCustomWorkoutList from '../views/AdminCustomWorkoutList.vue';
 
 const routes = [
   // default to login
@@ -34,6 +37,15 @@ const routes = [
     name: 'AdminExerciseSettings',
     component: AdminExerciseSettings,
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { path: '/admin/workouts', name: 'AdminWorkoutList', component: AdminWorkoutList, meta: { requiresAuth: true } },
+  { path: '/admin/workouts/new', name: 'AdminWorkoutNew', component: AdminWorkoutEdit, meta: { requiresAuth: true } },
+  { path: '/admin/workouts/:id', name: 'AdminWorkoutEdit', component: AdminWorkoutEdit, props: true, meta: { requiresAuth: true } },
+  {
+    path: '/admin/workouts/custom',
+    name: 'AdminCustomWorkoutList',
+    component: AdminCustomWorkoutList,
+    meta: { requiresAuth: true }
   },
 ];
 

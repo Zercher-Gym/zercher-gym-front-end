@@ -14,11 +14,21 @@
 
       <!-- Exercise Management -->
       <div class="card">
-        <h2>Gestionare Exercitii</h2>
+        <h2>Gestionare Exerciții</h2>
         <div class="actions">
-          <router-link to="/admin/exercises" class="btn">Lista Exercitii</router-link>
-          <router-link to="/admin/exercises/new" class="btn">Adauga Exercitiu</router-link>
+          <router-link to="/admin/exercises" class="btn">Lista Exerciții</router-link>
+          <router-link to="/admin/exercises/new" class="btn">Adaugă Exercițiu</router-link>
           <router-link to="/admin/exercises/settings" class="btn">Setări Exerciții</router-link>
+        </div>
+      </div>
+
+      <!-- Workout Management -->
+      <div class="card">
+        <h2>Gestionare Antrenamente</h2>
+        <div class="actions">
+          <router-link to="/admin/workouts" class="btn">Lista Antrenamente</router-link>
+          <router-link to="/admin/workouts/new" class="btn">Adaugă Antrenament</router-link>
+          <router-link to="/admin/workouts/custom" class="btn">Antrenamente Personalizate</router-link>
         </div>
       </div>
 
@@ -33,19 +43,27 @@
     </div>
 
     <div class="dashboard-section">
-      <h3>Gestionare Exercitii</h3>
+      <h3>Gestionare Exerciții & Antrenamente</h3>
       <div class="dashboard-links">
         <router-link to="/admin/exercises" class="dashboard-link">
           <i class="fas fa-dumbbell"></i>
-          Exercitii Predefinite
+          Exerciții Predefinite
+        </router-link>
+        <router-link to="/admin/workouts" class="dashboard-link">
+          <i class="fas fa-running"></i>
+          Antrenamente Predefinite
         </router-link>
         <router-link to="/admin/exercises/custom" class="dashboard-link">
           <i class="fas fa-user-edit"></i>
-          Exercitii Personalizate
+          Exerciții Personalizate
         </router-link>
         <router-link to="/admin/exercises/settings" class="dashboard-link">
           <i class="fas fa-cog"></i>
           Setări Limite Exerciții
+        </router-link>
+        <router-link to="/admin/workouts/custom" class="dashboard-link">
+          <i class="fas fa-user-clock"></i>
+          Antrenamente Personalizate
         </router-link>
       </div>
     </div>
@@ -163,4 +181,4 @@ h1 {
 .dashboard-link i {
   margin-right: 0.5rem;
 }
-</style> 
+</style>
