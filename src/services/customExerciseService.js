@@ -1,9 +1,9 @@
 import axios from 'axios'
 
-const BASE_URL = '/api/exercises/custom/admin'
+const BASE_URL = '/api/exercise/custom/admin'
 
 export const fetchCustomExercises = (params = {}) => {
-  return axios.get(BASE_URL, { params })
+  return axios.get('/api/exercise/custom', { params })
 }
 
 export const deleteCustomExercise = (id) => {

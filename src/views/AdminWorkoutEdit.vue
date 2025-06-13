@@ -24,22 +24,24 @@
         <table class="exercise-table">
           <thead>
             <tr>
-              <th>ID Exercițiu</th>
+              <th>Identificator</th>
+              <th>Titlu</th>
               <th>Cantitate</th>
-              <th>Unit Id</th>
+              <th>Unit</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(ex, idx) in exercises" :key="idx">
-              <td><input v-model="ex.exerciseId" placeholder="UUID" required /></td>
+              <td>{{ ex.identifier }}</td>
+              <td>{{ ex.title }}</td>
               <td><input type="number" v-model.number="ex.quantity" min="1" required /></td>
-              <td><input type="number" v-model.number="ex.unitId" min="1" required /></td>
+              <td>{{ ex.unitLabel }}</td>
               <td><button type="button" @click="removeEx(idx)">✕</button></td>
             </tr>
           </tbody>
         </table>
-        <button type="button" class="btn-add-row" @click="addEx">Adaugă exercițiu</button>
+        <button type="button" class="btn-add-row" @click="showModal = true">Adaugă exercițiu</button>
       </div>
       <div class="form-actions">
         <router-link to="/admin/workouts" class="btn-cancel">Anulează</router-link>
@@ -47,12 +49,14 @@
       </div>
     </form>
 
-    <div v-else class="loading">Se încarcă...</div>
+    <ExerciseSelectModal v-if="showModal" @selected="onExerciseSelected" @cancel="showModal=false" />
+    <div v-else class="loading" v-if="loading">Se încarcă...</div>
   </div>
 </template>
 
 <script>
 import { getWorkout, createWorkout, updateWorkoutLabel } from '../services/workoutService';
+import ExerciseSelectModal from '../components/ExerciseSelectModal.vue';
 
 export default {
   name: 'AdminWorkoutEdit',
@@ -62,19 +66,36 @@ export default {
   data() {
     return {
       form: { identifier: '', title: '', description: '' },
-      exercises: [ { exerciseId: '', quantity: 1, unitId: 1 } ],
+      exercises: [],
       loading: false,
       saving: false,
-      labelId: null
+      labelId: null,
+      showModal: false
     };
   },
   computed: {
     isNew() { return !this.id; }
   },
+  components: { ExerciseSelectModal },
   methods: {
-    addEx() {
-      this.exercises.push({ exerciseId: '', quantity: 1, unitId: 1 });
+    getRoLabel(labels){
+      if(!labels) return {};
+      if(Array.isArray(labels)) return labels.find(l=> (l.language||'').toLowerCase()==='ro')||labels[0]||{};
+      return labels.ro||labels.RO||{};
     },
+    onExerciseSelected({ exercise, unitId }) {
+      const ro = this.getRoLabel(exercise.labels);
+      this.exercises.push({
+        exerciseId: exercise.id,
+        identifier: exercise.identifier,
+        title: ro.title,
+        quantity: 1,
+        unitId: unitId,
+        unitLabel: (exercise.units.find(u=>u.id===unitId)||{}).code || unitId
+      });
+      this.showModal = false;
+    },
+    addEx() {},
     removeEx(idx) {
       this.exercises.splice(idx, 1);
     },
@@ -99,8 +120,11 @@ export default {
           if (Array.isArray(workout.exercises)) {
             this.exercises = workout.exercises.map(e => ({
               exerciseId: e.exerciseId || e.exercise?.id || '',
+              identifier: e.exercise?.identifier || '',
+              title: e.exercise?.labels?.ro?.title || '',
               quantity: e.quantity || 1,
-              unitId: e.unitId || e.units?.id || 1
+              unitId: e.unitId || e.units?.id || 1,
+              unitLabel: e.units?.type || e.unitId
             }));
           }
         })
