@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = '/api/exercises/custom'
+const BASE_URL = '/api/exercises/custom/admin'
 
 export const fetchCustomExercises = (params = {}) => {
   return axios.get(BASE_URL, { params })
