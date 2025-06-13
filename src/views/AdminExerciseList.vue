@@ -177,7 +177,13 @@ export default {
       }
     },
     getRomanianLabel(labels) {
-      return labels?.find(label => label.language === 'RO')
+      if (!labels) return {};
+      if (Array.isArray(labels)) {
+        return labels.find(l => (l.language || '').toLowerCase() === 'ro') || labels[0] || {};
+      }
+      if (labels.ro) return labels.ro;
+      if (labels.RO) return labels.RO;
+      return Object.values(labels)[0] || {};
     },
     confirmDelete(id) {
       this.delId = id
