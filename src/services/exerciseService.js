@@ -138,3 +138,8 @@ export const getExercise = (id) => {
   console.log(`Getting exercise with ID: ${id} from URL: ${url}`);
   return axios.get(url);
 }
+
+// Public search (non-admin) for exercise list used in workout modal
+export const searchExercises = (params) => {
+  return axios.get(`${ADMIN_URL}/search`, { params });
+};

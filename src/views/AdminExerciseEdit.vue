@@ -23,8 +23,14 @@
         <textarea v-model="form.description" required></textarea>
       </div>
       <div class="form-group">
-        <label>Unități (separate prin virgulă):</label>
-        <input v-model="form.units" placeholder="ex: 9007199254740991" />
+        <label>Unitate{{ isNew ? ' (selectează una sau mai multe)' : '' }}:</label>
+        <MultiSelectDropdown
+          v-model="selectedUnitIds"
+          :options="unitsList"
+          label-field="code"
+          value-field="id"
+          placeholder="Selectează unități"
+        />
       </div>
       <div class="form-actions">
         <router-link to="/admin/exercises" class="btn-cancel">Anulează</router-link>
@@ -40,6 +46,8 @@
 
 <script>
 import { getExercise, createExercise, updateExercise } from '../services/exerciseService'
+import { fetchUnits } from '../services/unitService'
+import MultiSelectDropdown from '../components/MultiSelectDropdown.vue'
 
 export default {
   name: 'AdminExerciseEdit',
@@ -54,9 +62,10 @@ export default {
       form: {
         identifier: '',
         title: '',
-        description: '',
-        units: ''
+        description: ''
       },
+      selectedUnitIds: [],
+      unitsList: [],
       numericId: null, // adaugam id-ul numeric pentru actualizare
       loading: false,
       saving: false
@@ -67,6 +76,7 @@ export default {
       return !this.id
     }
   },
+  components: { MultiSelectDropdown },
   methods: {
     load() {
       if (this.isNew) return
@@ -120,9 +130,7 @@ export default {
             this.form.description = roLabel.description
           }
           
-          if (exercise.units) {
-            this.form.units = exercise.units.join(', ')
-          }
+          this.selectedUnitIds = exercise.units;
         })
         .catch(err => {
           console.error('Error loading exercise:', err)
@@ -132,6 +140,17 @@ export default {
           this.loading = false
         })
     },
+    loadUnits() {
+      fetchUnits()
+        .then(res => {
+          const list = res.data?.data || [];
+          this.unitsList = list;
+          if (this.isNew && !this.selectedUnitIds.length && list.length) {
+            this.selectedUnitIds = [list[0].id];
+          }
+        })
+        .catch(err => console.error('Error fetching units', err));
+    },
     save() {
       this.saving = true
       
@@ -139,17 +158,14 @@ export default {
       let action;
       
       if (this.isNew) {
-        const units = this.form.units.split(',')
-          .map(u => parseInt(u.trim(), 10))
-          .filter(u => !isNaN(u) && u !== null);
-
         payload = {
           identifier: this.form.identifier,
           labels: [{
             title: this.form.title,
             description: this.form.description,
             language: 'ro'
-          }]
+          }],
+          units: this.selectedUnitIds.map(Number)
         };
         
         console.log('Creating new exercise with payload:', JSON.stringify(payload));
@@ -192,7 +208,8 @@ export default {
     }
   },
   mounted() {
-    this.load()
+    this.loadUnits();
+    this.load();
   }
 }
 </script>
@@ -267,5 +284,13 @@ button:disabled {
   padding: 2rem;
   font-style: italic;
   color: #666;
+}
+
+.select-units { 
+  display: none; /* legacy hidden */
+}
+
+.form-actions button, .form-actions .btn-cancel { 
+  min-width: 120px; 
 }
 </style>

@@ -19,6 +19,7 @@
           <router-link to="/admin/exercises" class="btn">Lista Exerciții</router-link>
           <router-link to="/admin/exercises/new" class="btn">Adaugă Exercițiu</router-link>
           <router-link to="/admin/exercises/settings" class="btn">Setări Exerciții</router-link>
+          <router-link to="/admin/exercises/custom" class="btn"> Exerciții Personalizate </router-link>
         </div>
       </div>
 
@@ -39,32 +40,6 @@
           <router-link to="/reset-password" class="btn">Resetare Parola</router-link>
           <button @click="logout" class="btn btn-danger">Deconectare</button>
         </div>
-      </div>
-    </div>
-
-    <div class="dashboard-section">
-      <h3>Gestionare Exerciții & Antrenamente</h3>
-      <div class="dashboard-links">
-        <router-link to="/admin/exercises" class="dashboard-link">
-          <i class="fas fa-dumbbell"></i>
-          Exerciții Predefinite
-        </router-link>
-        <router-link to="/admin/workouts" class="dashboard-link">
-          <i class="fas fa-running"></i>
-          Antrenamente Predefinite
-        </router-link>
-        <router-link to="/admin/exercises/custom" class="dashboard-link">
-          <i class="fas fa-user-edit"></i>
-          Exerciții Personalizate
-        </router-link>
-        <router-link to="/admin/exercises/settings" class="dashboard-link">
-          <i class="fas fa-cog"></i>
-          Setări Limite Exerciții
-        </router-link>
-        <router-link to="/admin/workouts/custom" class="dashboard-link">
-          <i class="fas fa-user-clock"></i>
-          Antrenamente Personalizate
-        </router-link>
       </div>
     </div>
   </div>
