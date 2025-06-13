@@ -111,11 +111,12 @@ export const updateExercise = (id, data) => {
     description: data.description
   };
   
-  // Use the correct endpoint from Swagger: /api/exercise/label/{id}
+  // Use the correct endpoint from Swagger: /api/exercise/admin/label/{id}
   // Where {id} is the numeric ID of the exercise
-  console.log(`Using endpoint: ${BASE_URL}/label/${numericId} with payload:`, JSON.stringify(simplifiedPayload));
+  const url = `${BASE_URL}/admin/label/${numericId}`;
+  console.log(`Using endpoint: ${url} with payload:`, JSON.stringify(simplifiedPayload));
   
-  return axios.put(`${BASE_URL}/label/${numericId}`, simplifiedPayload)
+  return axios.put(url, simplifiedPayload)
     .then(response => {
       console.log('Exercise updated successfully:', response.data)
       return response
@@ -133,5 +134,7 @@ export const deleteExercise = (id) => {
 }
 
 export const getExercise = (id) => {
-  return axios.get(`${BASE_URL}/${id}`)
-} 
+  const url = `${BASE_URL}/${id}`;
+  console.log(`Getting exercise with ID: ${id} from URL: ${url}`);
+  return axios.get(url);
+}

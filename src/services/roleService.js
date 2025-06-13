@@ -2,10 +2,10 @@ import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
-// Set exercise limit for a role
-export const setRoleExerciseLimit = (roleId, exerciseLimit) => {
+// Set exercise and workout limits for a role
+export const setRoleExerciseLimit = (roleId, exerciseLimit, workoutLimit) => {
   const token = sessionStorage.getItem('jwt');
-  return axios.put(`${baseURL}/api/role/admin/limit/${roleId}`, { exerciseLimit }, {
+  return axios.put(`${baseURL}/api/role/admin/limit/${roleId}`, { exerciseLimit, workoutLimit }, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'

@@ -26,6 +26,7 @@
             <tr>
               <th>Rol</th>
               <th>Limită Exerciții</th>
+              <th>Limită Workout-uri</th>
               <th>Acțiuni</th>
             </tr>
           </thead>
@@ -36,6 +37,14 @@
                 <input 
                   type="number" 
                   v-model.number="roleLimits[role.id]" 
+                  min="0" 
+                  :disabled="saving === role.id"
+                />
+              </td>
+              <td>
+                <input 
+                  type="number" 
+                  v-model.number="workoutLimits[role.id]" 
                   min="0" 
                   :disabled="saving === role.id"
                 />
@@ -72,7 +81,9 @@
       return {
         roles: [],
         originalLimits: {},
+        originalWorkoutLimits: {},
         roleLimits: {},
+        workoutLimits: {},
         loading: true,
         saving: null,
         error: null,
@@ -104,16 +115,21 @@
             }));
             
             this.originalLimits = {};
+            this.originalWorkoutLimits = {};
             this.roleLimits = {};
+            this.workoutLimits = {};
             
             // Set limits directly from the data
             rolesData.forEach(item => {
               const roleId = item.roleId || item.id;
-              const limitValue = item.exerciseLimit !== undefined ? item.exerciseLimit : 0;
+              const exerciseVal = item.exerciseLimit !== undefined ? item.exerciseLimit : 0;
+              const workoutVal = item.workoutLimit !== undefined ? item.workoutLimit : 0;
               
               if (roleId) {
-                this.originalLimits[roleId] = limitValue;
-                this.roleLimits[roleId] = limitValue;
+                this.originalLimits[roleId] = exerciseVal;
+                this.roleLimits[roleId] = exerciseVal;
+                this.originalWorkoutLimits[roleId] = workoutVal;
+                this.workoutLimits[roleId] = workoutVal;
               } else {
                 console.error('Invalid role object (missing ID):', item);
               }
@@ -123,7 +139,9 @@
             // Extract roles and limits from the object structure
             const roles = [];
             this.originalLimits = {};
+            this.originalWorkoutLimits = {};
             this.roleLimits = {};
+            this.workoutLimits = {};
             
             // Handle various possible response formats
             if (rolesData.roles && Array.isArray(rolesData.roles)) {
@@ -146,11 +164,14 @@
             // Extract limits
             roles.forEach(role => {
               const roleId = role.roleId || role.id;
-              const limitValue = role.exerciseLimit !== undefined ? role.exerciseLimit : 0;
+              const exerciseVal = role.exerciseLimit !== undefined ? role.exerciseLimit : 0;
+              const workoutVal = role.workoutLimit !== undefined ? role.workoutLimit : 0;
               
               if (roleId) {
-                this.originalLimits[roleId] = limitValue;
-                this.roleLimits[roleId] = limitValue;
+                this.originalLimits[roleId] = exerciseVal;
+                this.roleLimits[roleId] = exerciseVal;
+                this.originalWorkoutLimits[roleId] = workoutVal;
+                this.workoutLimits[roleId] = workoutVal;
               }
             });
           } else {
@@ -175,9 +196,10 @@
         this.showSuccess = false;
         
         try {
-          await setRoleExerciseLimit(roleId, this.roleLimits[roleId]);
+          await setRoleExerciseLimit(roleId, this.roleLimits[roleId], this.workoutLimits[roleId]);
           // Update original limit after successful save
           this.originalLimits[roleId] = this.roleLimits[roleId];
+          this.originalWorkoutLimits[roleId] = this.workoutLimits[roleId];
           
           // Show success message
           this.successMessage = 'Limita a fost actualizată cu succes!';
@@ -190,15 +212,17 @@
         } catch (err) {
           console.error('Error saving limit:', err);
           this.error = 'Eroare la salvarea limitei. Vă rugăm să încercați din nou.';
-          // Revert to original value
+          // Revert to original values
           this.roleLimits[roleId] = this.originalLimits[roleId];
+          this.workoutLimits[roleId] = this.originalWorkoutLimits[roleId];
         } finally {
           this.saving = null;
         }
       },
       
       hasChanged(roleId) {
-        return this.originalLimits[roleId] !== this.roleLimits[roleId];
+        return this.originalLimits[roleId] !== this.roleLimits[roleId] ||
+               this.originalWorkoutLimits[roleId] !== this.workoutLimits[roleId];
       }
     },
     mounted() {
@@ -321,6 +345,3 @@
     margin-top: 0.125rem;
   }
   </style>
-  
-  
-  

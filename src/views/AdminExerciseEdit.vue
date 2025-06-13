@@ -22,6 +22,10 @@
         <label>Descriere (RO):</label>
         <textarea v-model="form.description" required></textarea>
       </div>
+      <div class="form-group">
+        <label>Unități (separate prin virgulă):</label>
+        <input v-model="form.units" placeholder="ex: 9007199254740991" />
+      </div>
       <div class="form-actions">
         <router-link to="/admin/exercises" class="btn-cancel">Anulează</router-link>
         <button type="submit" :disabled="saving">{{ isNew ? 'Adaugă' : 'Salvează' }}</button>
@@ -50,7 +54,8 @@ export default {
       form: {
         identifier: '',
         title: '',
-        description: ''
+        description: '',
+        units: ''
       },
       numericId: null, // adaugam id-ul numeric pentru actualizare
       loading: false,
@@ -114,6 +119,10 @@ export default {
             this.form.title = roLabel.title
             this.form.description = roLabel.description
           }
+          
+          if (exercise.units) {
+            this.form.units = exercise.units.join(', ')
+          }
         })
         .catch(err => {
           console.error('Error loading exercise:', err)
@@ -130,6 +139,10 @@ export default {
       let action;
       
       if (this.isNew) {
+        const units = this.form.units.split(',')
+          .map(u => parseInt(u.trim(), 10))
+          .filter(u => !isNaN(u) && u !== null);
+
         payload = {
           identifier: this.form.identifier,
           labels: [{

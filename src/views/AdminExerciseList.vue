@@ -185,6 +185,7 @@ export default {
       if (labels.RO) return labels.RO;
       return Object.values(labels)[0] || {};
     },
+
     confirmDelete(id) {
       this.delId = id
       this.showDelete = true
