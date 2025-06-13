@@ -58,6 +58,7 @@ export default {
   data() {
     return {
       query: '',
+      debounceTimer: null,
       results: [],
       loading: false,
       searched: false,
@@ -66,12 +67,16 @@ export default {
     };
   },
   methods: {
+    triggerSearch() {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(this.doSearch, 400);
+    },
     doSearch() {
       if (!this.query) return;
       this.loading = true;
       this.results = [];
       this.searched = false;
-      searchExercises({ text: this.query, size: 20 })
+      searchExercises({ text: this.query, title: this.query, identifier: this.query, name: this.query, size: 20 })
         .then(res => {
           this.results = res.data?.data || [];
           this.searched = true;
@@ -106,6 +111,11 @@ export default {
         return labels.find(l => (l.language || '').toLowerCase() === 'ro') || labels[0] || {};
       }
       return labels.ro || labels.RO || {};
+    }
+  },
+  watch: {
+    query() {
+      this.triggerSearch();
     }
   }
 };

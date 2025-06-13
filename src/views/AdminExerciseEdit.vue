@@ -1,5 +1,5 @@
 <template>
-  <div class="exercise-edit">
+  <div class="exercise-edit card">
     <h2>{{ isNew ? 'Adaugă Exercițiu' : 'Editează Exercițiu' }}</h2>
 
     <form @submit.prevent="save" v-if="!loading">
@@ -33,8 +33,8 @@
         />
       </div>
       <div class="form-actions">
-        <router-link to="/admin/exercises" class="btn-cancel">Anulează</router-link>
-        <button type="submit" :disabled="saving">{{ isNew ? 'Adaugă' : 'Salvează' }}</button>
+        <router-link to="/admin/exercises" class="btn btn-secondary">Anulează</router-link>
+        <button type="submit" :disabled="saving" class="btn btn-primary">{{ isNew ? 'Adaugă' : 'Salvează' }}</button>
       </div>
     </form>
 
@@ -214,7 +214,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 .readonly-field {
   padding: 0.75rem;
   border: 1px solid #e0e0e0;

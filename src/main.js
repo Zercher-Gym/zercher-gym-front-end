@@ -3,6 +3,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 import axios from 'axios';
+import './assets/theme.css';
 
 // import './assets/main.css'; // if you have any global styles
 
