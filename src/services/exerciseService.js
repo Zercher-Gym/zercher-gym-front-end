@@ -34,8 +34,8 @@ export const fetchExercises = (params) => {
 export const createExercise = (data) => {
   console.log('Creating exercise with data:', JSON.stringify(data))
   
-  // Folosim endpoint-ul exact din Swagger: POST /api/exercise/create
-  const url = `${BASE_URL}/create`;
+  // Folosim endpoint-ul exact din Swagger: POST /api/exercise/admin/create
+  const url = `${BASE_URL}/admin/create`;
   console.log('Posting to URL:', url);
   
   return axios.post(url, data)
@@ -110,11 +110,12 @@ export const updateExercise = (id, data) => {
     description: data.description
   };
   
-  // Use the correct endpoint from Swagger: /api/exercise/label/{id}
+  // Use the correct endpoint from Swagger: /api/exercise/admin/label/{id}
   // Where {id} is the numeric ID of the exercise
-  console.log(`Using endpoint: ${BASE_URL}/label/${numericId} with payload:`, JSON.stringify(simplifiedPayload));
+  const url = `${BASE_URL}/admin/label/${numericId}`;
+  console.log(`Using endpoint: ${url} with payload:`, JSON.stringify(simplifiedPayload));
   
-  return axios.put(`${BASE_URL}/label/${numericId}`, simplifiedPayload)
+  return axios.put(url, simplifiedPayload)
     .then(response => {
       console.log('Exercise updated successfully:', response.data)
       return response
@@ -128,9 +129,13 @@ export const updateExercise = (id, data) => {
 }
 
 export const deleteExercise = (id) => {
-  return axios.delete(`${BASE_URL}/${id}`)
+  const url = `${BASE_URL}/admin/${id}`;
+  console.log(`Deleting exercise with ID: ${id} from URL: ${url}`);
+  return axios.delete(url);
 }
 
 export const getExercise = (id) => {
-  return axios.get(`${BASE_URL}/${id}`)
-} 
+  const url = `${BASE_URL}/${id}`;
+  console.log(`Getting exercise with ID: ${id} from URL: ${url}`);
+  return axios.get(url);
+}

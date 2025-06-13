@@ -155,7 +155,8 @@ export default {
           await axios.post(`${baseURL}/api/user/admin/create`, payload, { headers });
         } else {
           // Actualizam un utilizator existent
-          await axios.put(`${baseURL}/api/user/admin/${this.id}`,
+          await axios.put(
+            `${baseURL}/api/user/${this.id}`,
             {
               enabled: this.user.enabled,
               locked: this.user.locked,

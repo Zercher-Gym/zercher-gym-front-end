@@ -177,8 +177,9 @@ export default {
       }
     },
     getRomanianLabel(labels) {
-      return labels?.find(label => label.language === 'RO')
+      return labels?.find(label => label.language && label.language.toLowerCase() === 'ro')
     },
+
     confirmDelete(id) {
       this.delId = id
       this.showDelete = true
