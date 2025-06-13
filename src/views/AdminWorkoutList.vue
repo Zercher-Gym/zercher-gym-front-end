@@ -2,7 +2,7 @@
   <div class="workout-list">
     <div class="header">
       <h2>Antrenamente Predefinite</h2>
-      <router-link to="/admin/workouts/new" class="btn-add">Adaugă Antrenament</router-link>
+      <router-link to="/admin/workouts/new" class="btn btn-primary">Adaugă Antrenament</router-link>
     </div>
 
     <!-- Filters -->
@@ -29,8 +29,10 @@
           <td>{{ getRomanianLabel(workout.labels)?.title }}</td>
           <td>{{ getRomanianLabel(workout.labels)?.description }}</td>
           <td>
-            <router-link :to="`/admin/workouts/${workout.id}`">Editează</router-link>
-            <button @click="confirmDelete(workout.id)">Șterge</button>
+            <div class="action-btns">
+              <router-link :to="`/admin/workouts/${workout.id}`" class="btn btn-secondary btn-sm">Editează</router-link>
+              <button class="btn btn-danger btn-sm" @click="confirmDelete(workout.id)">Șterge</button>
+            </div>
           </td>
         </tr>
         <tr v-if="!loading && workouts.length === 0">
@@ -110,7 +112,6 @@ export default {
       fetchWorkouts(params)
         .then(res => {
           let data = res.data;
-          console.log(data);
           if (data && data.data) data = data.data;
           if (Array.isArray(data)) {
             this.workouts = data;
@@ -184,7 +185,6 @@ export default {
 <style scoped>
 .workout-list { max-width: 1000px; margin: 2rem auto; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.btn-add { padding: 0.5rem 1rem; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; }
 .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
 .filters input { flex: 1 1 150px; padding: 0.25rem 0.5rem; }
 .filters button { padding: 0.25rem 0.75rem; }
@@ -195,4 +195,5 @@ th { background-color: #f5f5f5; }
 button { padding: 0.25rem 0.75rem; border: none; border-radius: 4px; cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 .text-center { text-align: center; }
+.action-btns { display:flex; gap:0.25rem; }
 </style>
