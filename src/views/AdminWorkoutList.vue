@@ -6,43 +6,62 @@
     </div>
 
     <!-- Filters -->
-    <form @submit.prevent="load" class="filters">
-      <input v-model="filters.identifier" placeholder="Identificator" />
-      <input v-model="filters.title" placeholder="Titlu" />
-      <input v-model="filters.description" placeholder="Descriere" />
-      <button type="submit">Filtrează</button>
-    </form>
+    <div class="filters-container">
+      <form @submit.prevent="load" class="filters">
+        <div class="filter-group">
+          <input v-model="filters.identifier" placeholder="Identificator antrenament" />
+          <input v-model="filters.title" placeholder="Titlu" />
+          <input v-model="filters.description" placeholder="Descriere" />
+        </div>
+        <div class="filter-group">
+          <button type="submit" class="btn-filter">
+            <i class="fas fa-search"></i> Filtrează
+          </button>
+        </div>
+      </form>
+    </div>
 
     <!-- Workouts table -->
-    <table>
-      <thead>
-        <tr>
-          <th>Identificator</th>
-          <th>Titlu</th>
-          <th>Descriere</th>
-          <th>Acțiuni</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="workout in workouts" :key="workout.id">
-          <td>{{ workout.identifier }}</td>
-          <td>{{ getRomanianLabel(workout.labels)?.title }}</td>
-          <td>{{ getRomanianLabel(workout.labels)?.description }}</td>
-          <td>
-            <div class="action-btns">
-              <router-link :to="`/admin/workouts/${workout.id}`" class="btn btn-secondary btn-sm">Editează</router-link>
-              <button class="btn btn-danger btn-sm" @click="confirmDelete(workout.id)">Șterge</button>
-            </div>
-          </td>
-        </tr>
-        <tr v-if="!loading && workouts.length === 0">
-          <td colspan="4" class="text-center">Nu s-au găsit antrenamente</td>
-        </tr>
-        <tr v-if="loading">
-          <td colspan="4" class="text-center">Se încarcă...</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Identificator</th>
+            <th>Titlu (RO)</th>
+            <th>Descriere (RO)</th>
+            <th>Titlu (EN)</th>
+            <th>Descriere (EN)</th>
+            <th>Acțiuni</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="workout in workouts" :key="workout.id">
+            <td>{{ workout.identifier }}</td>
+            <td>{{ getLabel(workout.labels, 'ro')?.title }}</td>
+            <td>{{ getLabel(workout.labels, 'ro')?.description }}</td>
+            <td>{{ getLabel(workout.labels, 'en')?.title }}</td>
+            <td>{{ getLabel(workout.labels, 'en')?.description }}</td>
+            <td class="actions">
+              <router-link :to="`/admin/workouts/${workout.id}`" class="btn-edit">
+                <i class="fas fa-edit"></i> Editează
+              </router-link>
+              <button class="btn-delete" @click="confirmDelete(workout.id)">
+                <i class="fas fa-trash"></i> Șterge
+              </button>
+            </td>
+          </tr>
+          <tr v-if="!loading && workouts.length === 0">
+            <td colspan="6" class="text-center no-data">Nu s-au găsit antrenamente</td>
+          </tr>
+          <tr v-if="loading">
+            <td colspan="6" class="text-center loading">
+              <div class="loader"></div>
+              Se încarcă...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Pagination -->
     <div class="pagination">
@@ -144,17 +163,15 @@ export default {
         this.load();
       }
     },
-    getRomanianLabel(labels) {
+    getLabel(labels, lang) {
       if (!labels) return {};
-      // If backend returns an array
       if (Array.isArray(labels)) {
-        return labels.find(l => (l.language || '').toLowerCase() === 'ro') || labels[0] || {};
+        return labels.find(l => (l.language || '').toLowerCase() === lang) || {};
       }
-      // If backend returns an object keyed by language (e.g., { RO: {...}, EN: {...} })
-      if (labels.ro) return labels.ro;
-      if (labels.RO) return labels.RO;
-      // Fallback: return first value in object
-      return Object.values(labels)[0] || {};
+      if (labels[lang]) return labels[lang];
+      if (labels[lang.toUpperCase()]) return labels[lang.toUpperCase()];
+      if (typeof labels==='object') return Object.values(labels)[0] || {};
+      return {};
     },
     confirmDelete(id) {
       this.delId = id;
@@ -180,20 +197,42 @@ export default {
     setTimeout(() => this.load(), 300);
   }
 };
-</script>
+</script>    
 
 <style scoped>
-.workout-list { max-width: 1000px; margin: 2rem auto; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
-.filters input { flex: 1 1 150px; padding: 0.25rem 0.5rem; }
-.filters button { padding: 0.25rem 0.75rem; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
-th { background-color: #f5f5f5; }
-.pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; }
-button { padding: 0.25rem 0.75rem; border: none; border-radius: 4px; cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.text-center { text-align: center; }
-.action-btns { display:flex; gap:0.25rem; }
+:root {
+  --color-primary: #5B47FB;
+  --color-primary-hover: #4736c7;
+  --color-danger: #f44336;
+  --color-danger-hover: #c62828;
+  --color-secondary: #f3f4f6;
+  --color-secondary-text: #333;
+}
+.workout-list { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.btn-primary { padding: 0.5rem 1.2rem; background-color: var(--color-primary); color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500; border: none; transition: background 0.2s; }
+.btn-primary:hover { background-color: var(--color-primary-hover); color: #fff; }
+.filters-container { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+.filters { display: flex; flex-direction: column; gap: 1rem; }
+.filter-group { display: flex; flex-wrap: wrap; gap: 1rem; }
+.filters input { flex: 1; min-width: 180px; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 6px; }
+.btn-filter { padding: 0.75rem 1.5rem; background-color: var(--color-secondary); color: var(--color-secondary-text); border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: background 0.2s; }
+.btn-filter:hover { background-color: #e0e0e0; color: #222; }
+.table-container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 2rem; }
+.table-container table { width: 100%; border-collapse: collapse; }
+th { background-color: #f8f9fa; padding: 1rem; text-align: left; font-weight: 600; }
+.actions { display: flex; gap: 0.5rem; }
+.btn-edit { padding: 0.5rem 1.2rem; background-color: var(--color-primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 500; transition: background 0.2s; }
+.btn-edit:hover { background-color: var(--color-primary-hover); color: #fff; }
+.btn-delete { padding: 0.5rem 1.2rem; background-color: var(--color-danger); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: background 0.2s; }
+.btn-delete:hover { background-color: var(--color-danger-hover); color: #fff; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin-top: 2rem; }
+.btn-page { padding: 0.75rem 1.5rem; background-color: var(--color-secondary); color: var(--color-secondary-text); border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: background 0.2s; }
+.btn-page:hover:not(:disabled) { background-color: #e0e0e0; }
+.btn-page:disabled { background-color: #f8f9fa; color: #adb5bd; cursor: not-allowed; }
+.page-info { font-size: 0.95rem; color: #4a5568; }
+.loading { padding: 2rem !important; }
+.loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #4CAF50; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.no-data { color: #888; }
 </style>

@@ -1,14 +1,9 @@
 import axios from 'axios';
 
-// Base endpoint for admin access to user-defined (custom) workouts.
-// Updated according to new backend spec (see Swagger screenshot):
-//   LIST           GET  /api/workout/custom          (with paging/filters)
-//   DETAILS        GET  /api/workout/custom/{id}
-//   CREATE         POST /api/workout/custom/create
-//   UPDATE         PUT  /api/workout/custom/{id}
-//   DELETE         DELETE /api/workout/custom/{id}
+
+
 const LIST_URL = '/api/workout/custom';
-const DETAIL_URL = '/api/workout/custom'; // same as list plus /{id}
+const DETAIL_URL = '/api/workout/custom'; 
 const CREATE_URL = '/api/workout/custom/create';
 const UPDATE_URL = '/api/workout/custom';
 

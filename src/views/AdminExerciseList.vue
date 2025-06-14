@@ -6,41 +6,62 @@
     </div>
 
     <!-- Filters -->
-    <form @submit.prevent="load" class="filters">
-      <input v-model="filters.identifier" placeholder="Identificator" />
-      <input v-model="filters.title" placeholder="Titlu" />
-      <input v-model="filters.description" placeholder="Descriere" />
-      <button type="submit">Filtrează</button>
-    </form>
+    <div class="filters-container">
+      <form @submit.prevent="load" class="filters">
+        <div class="filter-group">
+          <input v-model="filters.identifier" placeholder="Identificator exercițiu" />
+          <input v-model="filters.title" placeholder="Titlu" />
+          <input v-model="filters.description" placeholder="Descriere" />
+        </div>
+        <div class="filter-group">
+          <button type="submit" class="btn-filter">
+            <i class="fas fa-search"></i> Filtrează
+          </button>
+        </div>
+      </form>
+    </div>
 
     <!-- Exercises table -->
-    <table>
-      <thead>
-        <tr>
-          <th>Identificator</th>
-          <th>Titlu</th>
-          <th>Descriere</th>
-          <th>Acțiuni</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="exercise in exercises" :key="exercise.id">
-          <td>{{ exercise.identifier }}</td>
-          <td>{{ getRomanianLabel(exercise.labels)?.title || exercise.title }}</td>
-          <td>{{ getRomanianLabel(exercise.labels)?.description || exercise.description }}</td>
-          <td>
-            <router-link :to="`/admin/exercises/${exercise.id}`">Editează</router-link>
-            <button @click="confirmDelete(exercise.id)">Șterge</button>
-          </td>
-        </tr>
-        <tr v-if="!loading && exercises.length === 0">
-          <td colspan="4" class="text-center">Nu s-au găsit exerciții</td>
-        </tr>
-        <tr v-if="loading">
-          <td colspan="4" class="text-center">Se încarcă...</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Identificator</th>
+            <th>Titlu (RO)</th>
+            <th>Descriere (RO)</th>
+            <th>Titlu (EN)</th>
+            <th>Descriere (EN)</th>
+            <th>Acțiuni</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="exercise in exercises" :key="exercise.id">
+            <td>{{ exercise.identifier }}</td>
+            <td>{{ getLabel(exercise.labels, 'ro')?.title || exercise.title }}</td>
+            <td>{{ getLabel(exercise.labels, 'ro')?.description || exercise.description }}</td>
+            <td>{{ getLabel(exercise.labels, 'en')?.title }}</td>
+            <td>{{ getLabel(exercise.labels, 'en')?.description }}</td>
+            <td class="actions">
+              <router-link :to="`/admin/exercises/${exercise.id}`" class="btn-edit">
+                <i class="fas fa-edit"></i> Editează
+              </router-link>
+              <button @click="confirmDelete(exercise.id)" class="btn-delete">
+                <i class="fas fa-trash"></i> Șterge
+              </button>
+            </td>
+          </tr>
+          <tr v-if="!loading && exercises.length === 0">
+            <td colspan="6" class="text-center no-data">Nu s-au găsit exerciții</td>
+          </tr>
+          <tr v-if="loading">
+            <td colspan="6" class="text-center loading">
+              <div class="loader"></div>
+              Se încarcă...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Pagination -->
     <div class="pagination">
@@ -103,13 +124,12 @@ export default {
     load() {
       this.loading = true
       
-      // Verificăm dacă avem flag-ul de reîncărcare setat
       const needsReload = sessionStorage.getItem('exerciseListNeedsReload')
       if (needsReload === 'true') {
         console.log('Exercise list needs reload flag detected, forcing reload')
-        // Resetăm flag-ul
+        // resetam flag-ul
         sessionStorage.removeItem('exerciseListNeedsReload')
-        // Resetăm filtrele pentru a vedea toate exercițiile, inclusiv cel nou adăugat
+        // resetam filtrele
         this.filters = {
           identifier: '',
           title: ''
@@ -121,6 +141,9 @@ export default {
         page: this.pageNumber,
         size: this.pageSize
       })
+      // Adaugă și filtrarea pentru EN dacă există
+      if (this.filters.titleEn) params['titleEn'] = this.filters.titleEn;
+      if (this.filters.descriptionEn) params['descriptionEn'] = this.filters.descriptionEn;
       console.log('Loading exercises with params:', params)
       fetchExercises(params)
         .then(res => {
@@ -176,13 +199,13 @@ export default {
         this.load()
       }
     },
-    getRomanianLabel(labels) {
+    getLabel(labels, lang) {
       if (!labels) return {};
       if (Array.isArray(labels)) {
-        return labels.find(l => (l.language || '').toLowerCase() === 'ro') || labels[0] || {};
+        return labels.find(l => (l.language || '').toLowerCase() === lang) || {};
       }
-      if (labels.ro) return labels.ro;
-      if (labels.RO) return labels.RO;
+      if (labels[lang]) return labels[lang];
+      if (labels[lang.toUpperCase()]) return labels[lang.toUpperCase()];
       if (typeof labels==='object') return Object.values(labels)[0] || {};
       return {};
     },
@@ -217,79 +240,55 @@ export default {
 </script>
 
 <style scoped>
-.exercise-list {
-  max-width: 1000px;
-  margin: 2rem auto;
+:root {
+  --color-primary: #5B47FB;
+  --color-primary-hover: #4736c7;
+  --color-danger: #f44336;
+  --color-danger-hover: #c62828;
+  --color-secondary: #f3f4f6;
+  --color-secondary-text: #333;
 }
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.btn-add {
-  padding: 0.5rem 1rem;
-  background-color: #4CAF50;
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.filters input {
-  flex: 1 1 150px;
-  padding: 0.25rem 0.5rem;
-}
-
-.filters button {
-  padding: 0.25rem 0.75rem;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-th {
-  background-color: #f5f5f5;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-button {
-  padding: 0.25rem 0.75rem;
-  border: none;
-  border-radius: 4px;
+.exercise-list { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.btn-add { padding: 0.5rem 1.2rem; background-color: var(--color-primary); color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500; border: none; transition: background 0.2s; }
+.btn-add:hover { background-color: var(--color-primary-hover); color: #fff; }
+.filters-container { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+.filters { display: flex; flex-direction: column; gap: 1rem; }
+.filter-group { display: flex; flex-wrap: wrap; gap: 1rem; }
+.filters input { flex: 1; min-width: 180px; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 6px; }
+.btn-filter {
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  color: var(--color-primary);
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  transition: border 0.2s, color 0.2s, background 0.2s;
 }
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.btn-filter:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+  background: #f6f7fe;
 }
-
-.text-center {
-  text-align: center;
-}
+.table-container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 2rem; }
+.table-container table { width: 100%; border-collapse: collapse; }
+th { background-color: #f8f9fa; padding: 1rem; text-align: left; font-weight: 600; }
+.actions { display: flex; gap: 0.5rem; }
+.btn-edit { padding: 0.5rem 1.2rem; background-color: var(--color-primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 500; transition: background 0.2s; }
+.btn-edit:hover { background-color: var(--color-primary-hover); color: #fff; }
+.btn-delete { padding: 0.5rem 1.2rem; background-color: var(--color-danger); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: background 0.2s; }
+.btn-delete:hover { background-color: var(--color-danger-hover); color: #fff; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin-top: 2rem; }
+.btn-page { padding: 0.75rem 1.5rem; background-color: var(--color-secondary); color: var(--color-secondary-text); border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: background 0.2s; }
+.btn-page:hover:not(:disabled) { background-color: #e0e0e0; }
+.btn-page:disabled { background-color: #f8f9fa; color: #adb5bd; cursor: not-allowed; }
+.page-info { font-size: 0.95rem; color: #4a5568; }
+.loading { padding: 2rem !important; }
+.loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #4CAF50; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.no-data { color: #888; }
 </style>
