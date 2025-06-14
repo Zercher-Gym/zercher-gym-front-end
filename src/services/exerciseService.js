@@ -143,3 +143,32 @@ export const getExercise = (id) => {
 export const searchExercises = (params) => {
   return axios.get(`${ADMIN_URL}/search`, { params });
 };
+
+// New: update exercise units
+export const updateExerciseUnits = (uuid, identifier, unitIds, title = null, description = null) => {
+  console.log('Updating exercise units for ID', uuid, 'identifier', identifier, 'with units', unitIds);
+
+  if (!Array.isArray(unitIds)) {
+    return Promise.reject(new Error('unitIds must be an array'));
+  }
+
+  const payload = {
+    units: unitIds.map(Number)
+  };
+
+  if (identifier) payload.identifier = identifier;
+
+  // dacă primim title/description le includem deoarece unele implementări le cer obligatoriu
+  if (title) payload.title = title;
+  if (description) payload.description = description;
+
+  return axios.put(`${BASE_URL}/admin/${uuid}`, payload)
+    .then(res => {
+      console.log('Units updated successfully', res.data);
+      return res;
+    })
+    .catch(err => {
+      console.error('Error updating units', err);
+      throw err;
+    });
+}

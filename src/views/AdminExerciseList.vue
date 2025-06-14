@@ -26,8 +26,8 @@
       <tbody>
         <tr v-for="exercise in exercises" :key="exercise.id">
           <td>{{ exercise.identifier }}</td>
-          <td>{{ getRomanianLabel(exercise.labels)?.title }}</td>
-          <td>{{ getRomanianLabel(exercise.labels)?.description }}</td>
+          <td>{{ getRomanianLabel(exercise.labels)?.title || exercise.title }}</td>
+          <td>{{ getRomanianLabel(exercise.labels)?.description || exercise.description }}</td>
           <td>
             <router-link :to="`/admin/exercises/${exercise.id}`">Editează</router-link>
             <button @click="confirmDelete(exercise.id)">Șterge</button>
@@ -183,7 +183,8 @@ export default {
       }
       if (labels.ro) return labels.ro;
       if (labels.RO) return labels.RO;
-      return Object.values(labels)[0] || {};
+      if (typeof labels==='object') return Object.values(labels)[0] || {};
+      return {};
     },
 
     confirmDelete(id) {
@@ -291,4 +292,4 @@ button:disabled {
 .text-center {
   text-align: center;
 }
-</style> 
+</style>

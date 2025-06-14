@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import { getWorkout, createWorkout, updateWorkoutLabel } from '../services/workoutService';
+import { getWorkout, createWorkout, updateWorkoutLabel, updateWorkout } from '../services/workoutService';
 import ExerciseSelectModal from '../components/ExerciseSelectModal.vue';
 
 export default {
@@ -104,28 +104,40 @@ export default {
       this.loading = true;
       getWorkout(this.id)
         .then(res => {
-          const workout = res.data;
+          // unwrap possible BaseResponse wrapper
+          const wrapper = res.data;
+          const workout = wrapper && wrapper.data ? wrapper.data : wrapper;
           console.log('Loaded workout', workout);
-          this.form.identifier = workout.identifier;
-          console.log(workout.data.labels);
-          const roLabel = Array.isArray(workout.data.labels)
-            ? (workout.data.labels.find(l => (l.language || '').toLowerCase() === 'ro') || workout.data.labels[0])
-            : (workout.data.labels?.ro || workout.data.labels?.RO || Object.values(workout.data.labels || {})[0] || null);
+          this.form.identifier = workout.identifier || '';
+          const labelContainer = workout.labels || workout.data?.labels;
+          const roLabel = Array.isArray(labelContainer)
+            ? (labelContainer.find(l => (l.language || '').toLowerCase() === 'ro') || labelContainer[0])
+            : (labelContainer?.ro || labelContainer?.RO || Object.values(labelContainer || {})[0] || null);
           console.log('Derived roLabel', roLabel);
           if (roLabel) {
             this.labelId = roLabel.id ?? roLabel.labelId ?? roLabel.labelID ?? null;
             this.form.title = roLabel.title;
             this.form.description = roLabel.description;
           }
-          if (Array.isArray(workout.exercises)) {
-            this.exercises = workout.exercises.map(e => ({
-              exerciseId: e.exerciseId || e.exercise?.id || '',
-              identifier: e.exercise?.identifier || '',
-              title: e.exercise?.labels?.ro?.title || '',
-              quantity: e.quantity || 1,
-              unitId: e.unitId || e.units?.id || 1,
-              unitLabel: e.units?.type || e.unitId
-            }));
+          const exList = workout.exercises || workout.data?.exercises || [];
+          if (Array.isArray(exList)) {
+            this.exercises = exList.map(e => {
+              // drill into nested structures safely
+              const exObj = e.exercise || e.exerciseDTO || {};
+              const baseLabels = e.labels || exObj.labels || {};
+              const labelObj = Array.isArray(baseLabels)
+                ? (baseLabels.find(l=> (l.language||'').toLowerCase()==='ro')||baseLabels[0])
+                : (baseLabels.ro || baseLabels.RO || {});
+              const unitObj = e.unit || e.units || {};
+              return {
+                exerciseId: e.exerciseId ?? exObj.id ?? '',
+                identifier: e.identifier ?? exObj.identifier ?? '',
+                title: labelObj?.title ?? '',
+                quantity: e.quantity ?? 1,
+                unitId: e.unitId ?? unitObj.id ?? 1,
+                unitLabel: unitObj.code ?? unitObj.type ?? e.unitId
+              }
+            });
           }
         })
         .catch(err => {
@@ -169,21 +181,35 @@ export default {
           this.saving = false;
           return;
         }
-        const payload = { title: this.form.title, description: this.form.description };
+        const labelPayload = { title: this.form.title, description: this.form.description };
         const targetId = this.labelId;
-        console.debug('Updating label', { targetId, payload });
-        action = updateWorkoutLabel(targetId, payload);
+        console.debug('Updating label', { targetId, labelPayload });
+        action = updateWorkoutLabel(targetId, labelPayload);
+
+        // send updated exercises list
+        const workoutPayload = {
+          identifier: this.form.identifier,
+          exercises: this.exercises.map(e => ({
+            exerciseId: e.exerciseId,
+            quantity: Number(e.quantity),
+            unitId: Number(e.unitId)
+          }))
+        };
+        console.debug('Updating workout base data', workoutPayload);
+        const extraAction = updateWorkout(this.id, workoutPayload);
+        const promises = extraAction ? [action, extraAction] : [action];
+
+        Promise.all(promises)
+          .then(() => {
+            sessionStorage.setItem('workoutListNeedsReload', 'true');
+            setTimeout(() => { this.$router.push('/admin/workouts'); }, 500);
+          })
+          .catch(err => {
+            console.error('Error saving workout:', err);
+            alert('Eroare la salvarea antrenamentului');
+          })
+          .finally(() => { this.saving = false; });
       }
-      action
-        .then(() => {
-          sessionStorage.setItem('workoutListNeedsReload', 'true');
-          setTimeout(() => { this.$router.push('/admin/workouts'); }, 500);
-        })
-        .catch(err => {
-          console.error('Error saving workout:', err);
-          alert('Eroare la salvarea antrenamentului');
-        })
-        .finally(() => { this.saving = false; });
     }
   },
   mounted() { this.load(); }

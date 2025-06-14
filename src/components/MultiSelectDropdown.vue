@@ -44,8 +44,11 @@ export default {
       return this.modelValue || [];
     },
     selectedLabels() {
+      // Coerce both option values and model values to strings for comparison to
+      // avoid issues when one side is numeric and the other is string.
+      const selected = this.modelVal.map(v => String(v));
       return this.options
-        .filter(o => this.modelVal.includes(o[this.valueField]))
+        .filter(o => selected.includes(String(o[this.valueField])))
         .map(o => o[this.labelField]);
     }
   },
@@ -54,15 +57,20 @@ export default {
       this.open = !this.open;
     },
     toggleValue(val) {
+      // Work on a shallow copy so we do not mutate the prop directly.
       let newVal = [...this.modelVal];
+
+      const findIndexLoose = arr => arr.findIndex(v => v == val);
+
       if (this.multiple) {
-        const idx = newVal.indexOf(val);
+        const idx = findIndexLoose(newVal);
         if (idx >= 0) newVal.splice(idx, 1);
         else newVal.push(val);
       } else {
         newVal = [val];
         this.open = false;
       }
+
       this.$emit('update:modelValue', newVal);
     },
     onOutsideClick(e) {
