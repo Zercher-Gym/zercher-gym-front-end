@@ -13,11 +13,19 @@
       </div>
       <div class="form-group">
         <label>Titlu (RO):</label>
-        <input v-model="form.title" required />
+        <input v-model="form.ro.title" required />
       </div>
       <div class="form-group">
         <label>Descriere (RO):</label>
-        <textarea v-model="form.description" required></textarea>
+        <textarea v-model="form.ro.description" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>Titlu (EN):</label>
+        <input v-model="form.en.title" required />
+      </div>
+      <div class="form-group">
+        <label>Descriere (EN):</label>
+        <textarea v-model="form.en.description" required></textarea>
       </div>
       <div class="form-group">
         <label>Exerciții</label>
@@ -65,11 +73,16 @@ export default {
   },
   data() {
     return {
-      form: { identifier: '', title: '', description: '' },
+      form: {
+        identifier: '',
+        ro: { title: '', description: '' },
+        en: { title: '', description: '' }
+      },
       exercises: [],
       loading: false,
       saving: false,
       labelId: null,
+      enLabelId: null,
       showModal: false
     };
   },
@@ -110,14 +123,24 @@ export default {
           console.log('Loaded workout', workout);
           this.form.identifier = workout.identifier || '';
           const labelContainer = workout.labels || workout.data?.labels;
-          const roLabel = Array.isArray(labelContainer)
-            ? (labelContainer.find(l => (l.language || '').toLowerCase() === 'ro') || labelContainer[0])
-            : (labelContainer?.ro || labelContainer?.RO || Object.values(labelContainer || {})[0] || null);
+          let roLabel = null, enLabel = null;
+          if (Array.isArray(labelContainer)) {
+            roLabel = labelContainer.find(l => (l.language || '').toLowerCase() === 'ro') || labelContainer[0];
+            enLabel = labelContainer.find(l => (l.language || '').toLowerCase() === 'en') || {};
+          } else if (labelContainer && typeof labelContainer === 'object') {
+            roLabel = labelContainer.ro || labelContainer.RO || Object.values(labelContainer)[0] || {};
+            enLabel = labelContainer.en || labelContainer.EN || {};
+          }
           console.log('Derived roLabel', roLabel);
           if (roLabel) {
             this.labelId = roLabel.id ?? roLabel.labelId ?? roLabel.labelID ?? null;
-            this.form.title = roLabel.title;
-            this.form.description = roLabel.description;
+            this.form.ro.title = roLabel.title || '';
+            this.form.ro.description = roLabel.description || '';
+          }
+          if (enLabel) {
+            this.enLabelId = enLabel.id ?? enLabel.labelId ?? enLabel.labelID ?? null;
+            this.form.en.title = enLabel.title || '';
+            this.form.en.description = enLabel.description || '';
           }
           const exList = workout.exercises || workout.data?.exercises || [];
           if (Array.isArray(exList)) {
@@ -164,6 +187,10 @@ export default {
       this.saving = true;
       let action;
       if (this.isNew) {
+        const labelEntries = [
+          { language: 'ro', title: this.form.ro.title, description: this.form.ro.description },
+          { language: 'en', title: this.form.en.title, description: this.form.en.description }
+        ];
         const payload = {
           identifier: this.form.identifier,
           exercises: this.exercises.map(e => ({
@@ -171,21 +198,34 @@ export default {
             quantity: Number(e.quantity),
             unitId: Number(e.unitId)
           })),
-          labels: [{ title: this.form.title, description: this.form.description, language: 'ro' }]
+          labels: labelEntries
         };
         console.debug('Creating workout payload', payload);
-        action = createWorkout(payload);
+        action = createWorkout(payload)
+          .then(() => {
+            sessionStorage.setItem('workoutListNeedsReload', 'true');
+            setTimeout(() => { this.$router.push('/admin/workouts'); }, 500);
+          })
+          .catch(err => {
+            console.error('Error saving workout:', err);
+            alert('Eroare la salvarea antrenamentului');
+          })
+          .finally(() => { this.saving = false; });
+        return;
       } else {
         if (!this.labelId) {
           alert('Nu s-a putut determina ID-ul etichetei pentru acest antrenament. Reîncărcați pagina.');
           this.saving = false;
           return;
         }
-        const labelPayload = { title: this.form.title, description: this.form.description };
-        const targetId = this.labelId;
-        console.debug('Updating label', { targetId, labelPayload });
-        action = updateWorkoutLabel(targetId, labelPayload);
-
+        const roLabel = { ...this.form.ro };
+        const enLabel = { ...this.form.en };
+        const updateRo = updateWorkoutLabel(this.labelId, { title: roLabel.title, description: roLabel.description });
+        let updateEn = null;
+        if (this.enLabelId) {
+          updateEn = updateWorkoutLabel(this.enLabelId, { title: enLabel.title, description: enLabel.description });
+        }
+        const updates = updateEn ? [updateRo, updateEn] : [updateRo];
         // send updated exercises list
         const workoutPayload = {
           identifier: this.form.identifier,
@@ -195,10 +235,8 @@ export default {
             unitId: Number(e.unitId)
           }))
         };
-        console.debug('Updating workout base data', workoutPayload);
         const extraAction = updateWorkout(this.id, workoutPayload);
-        const promises = extraAction ? [action, extraAction] : [action];
-
+        const promises = extraAction ? [...updates, extraAction] : updates;
         Promise.all(promises)
           .then(() => {
             sessionStorage.setItem('workoutListNeedsReload', 'true');

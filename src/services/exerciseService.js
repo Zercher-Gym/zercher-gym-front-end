@@ -12,7 +12,6 @@ export const fetchExercises = (params) => {
     .then(response => {
       console.log('Raw exercise list response:', response);
       
-      // Verificu0103 structura ru0103spunsului pentru debugging
       if (response.data) {
         if (response.data.content) {
           console.log('Found exercises in response.data.content:', response.data.content.length, 'items');
@@ -35,7 +34,7 @@ export const fetchExercises = (params) => {
 export const createExercise = (data) => {
   console.log('Creating exercise with data:', JSON.stringify(data))
   
-  // Folosim endpoint-ul exact din Swagger: POST /api/exercise/create
+  // POST /api/exercise/create
   const url = `${ADMIN_URL}/create`;
   console.log('Posting to URL:', url);
   
@@ -105,13 +104,12 @@ export const updateExercise = (id, data) => {
     return Promise.reject(new Error('Could not extract a valid exercise ID for update'));
   }
   
-  // According to Swagger, the payload must contain only title and description
   const simplifiedPayload = {
     title: data.title,
     description: data.description
   };
   
-  // Use the correct endpoint from Swagger: /api/exercise/admin/label/{id}
+  // Use endpoint from Swagger: /api/exercise/admin/label/{id}
   // Where {id} is the numeric ID of the exercise
   const url = `${BASE_URL}/admin/label/${numericId}`;
   console.log(`Using endpoint: ${url} with payload:`, JSON.stringify(simplifiedPayload));
@@ -158,7 +156,7 @@ export const updateExerciseUnits = (uuid, identifier, unitIds, title = null, des
 
   if (identifier) payload.identifier = identifier;
 
-  // dacă primim title/description le includem deoarece unele implementări le cer obligatoriu
+  // dacă primim title/description le includem in payload
   if (title) payload.title = title;
   if (description) payload.description = description;
 
